@@ -1,0 +1,35 @@
+name: Android release build
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: 'Android app module'
+        required: true
+        default: 'distro'
+        type: choice
+        options: [distro, people, logistics, portal, crm]
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build APK
+        run: ./gradlew :apps:${{ inputs.app }}:assembleDebug --no-daemon
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.app }}-debug-apk
+          path: apps/${{ inputs.app }}/build/outputs/apk/debug/*.apk
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.app }}-v1.0.0
+          name: ${{ inputs.app }} v1.0.0
+          files: apps/${{ inputs.app }}/build/outputs/apk/debug/*.apk
